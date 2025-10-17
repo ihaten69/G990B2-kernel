@@ -16,6 +16,11 @@ jobs:
       DEVICE_DEFCONFIG: r9q_eur_openx2_defconfig
 
     steps:
+      - name: Fix Ubuntu repos for lunar (23.04) end-of-life
+        run: |
+          sed -i 's|http://archive.ubuntu.com/ubuntu|http://old-releases.ubuntu.com/ubuntu|g' /etc/apt/sources.list
+          sed -i 's|http://security.ubuntu.com/ubuntu|http://old-releases.ubuntu.com/ubuntu|g' /etc/apt/sources.list
+
       - name: Install Dependencies
         run: |
           apt-get update
@@ -62,3 +67,4 @@ jobs:
         with:
           name: S21FE-Kernel-Neutron
           path: S21FE-Kernel-Neutron.zip
+
