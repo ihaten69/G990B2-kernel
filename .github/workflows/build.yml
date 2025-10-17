@@ -1,36 +1,41 @@
-name: Build S21FE Kernel (Neutron Clang via AntMan)
+name: Build S21FE Kernel (Neutron Clang with Docker)
 
 on:
   workflow_dispatch:
 
 jobs:
   build:
-    name: Build Kernel
-    runs-on: ubuntu-22.04
+    runs-on: ubuntu-latest
+    container:
+      image: ubuntu:23.04
+      options: --privileged
+
     env:
       ARCH: arm64
       SUBARCH: arm64
       DEVICE_DEFCONFIG: r9q_eur_openx2_defconfig
 
     steps:
+      - name: Install Dependencies
+        run: |
+          apt-get update
+          apt-get install -y git wget bc bison flex build-essential zip curl ccache libncurses5-dev python3
+
       - name: Checkout Kernel Source
         uses: actions/checkout@v4
 
-      - name: Setup Build Environment
-        run: |
-          sudo apt-get update
-          sudo apt-get install -y git wget bc bison flex build-essential zip curl ccache libncurses5-dev python3
-          mkdir -p $HOME/toolchains/neutron-clang
+      - name: Prepare Toolchain Directory
+        run: mkdir -p $HOME/toolchains/neutron-clang
 
       - name: Download and Sync Neutron Clang (AntMan)
         run: |
           cd $HOME/toolchains/neutron-clang
-          curl -LO "https://raw.githubusercontent.com/Neutron-Toolchains/antman/main/antman"
+          curl -LO https://raw.githubusercontent.com/Neutron-Toolchains/antman/main/antman
           chmod +x antman
           ./antman -S
           echo "Neutron Clang synced successfully."
 
-      - name: Verify Available Defconfigs
+      - name: Verify Defconfigs
         run: ls arch/arm64/configs/
 
       - name: Configure Kernel
@@ -57,4 +62,3 @@ jobs:
         with:
           name: S21FE-Kernel-Neutron
           path: S21FE-Kernel-Neutron.zip
-
