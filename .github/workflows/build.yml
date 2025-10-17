@@ -1,4 +1,4 @@
-name: Build S21FE Kernel (Neutron Clang)
+name: Build S21FE Kernel (Neutron Clang via AntMan)
 
 on:
   workflow_dispatch:
@@ -10,38 +10,39 @@ jobs:
     env:
       ARCH: arm64
       SUBARCH: arm64
-      DEVICE_DEFCONFIG: your_defconfig_name_here  # replace this with actual defconfig
+      DEVICE_DEFCONFIG: your_defconfig_name_here  # Replace this with your actual defconfig
 
     steps:
       - name: Checkout Kernel Source
         uses: actions/checkout@v4
 
-      - name: Setup Environment
+      - name: Setup Build Environment
         run: |
           sudo apt-get update
           sudo apt-get install -y git wget bc bison flex build-essential zip curl ccache libncurses5-dev python3
-          mkdir -p toolchains
+          mkdir -p $HOME/toolchains/neutron-clang
 
-      - name: Download Neutron Clang
+      - name: Download and Sync Neutron Clang (AntMan)
         run: |
-          cd toolchains
-          wget https://github.com/Neutron-Toolchains/clang-build-catalogue/releases/latest/download/Neutron-clang.tar.zst
-          tar --zstd -xf Neutron-clang.tar.zst
-          echo "Neutron clang setup done"
+          cd $HOME/toolchains/neutron-clang
+          curl -LO "https://raw.githubusercontent.com/Neutron-Toolchains/antman/main/antman"
+          chmod +x antman
+          ./antman -S
+          echo "Neutron Clang synced successfully."
 
-      - name: Prepare Build Directory
-        run: |
-          export PATH=$GITHUB_WORKSPACE/toolchains/Neutron-clang/bin:$PATH
-          mkdir -p out
+      - name: Setup Build Output
+        run: mkdir -p out
 
       - name: Configure Kernel
         run: |
+          export PATH=$HOME/toolchains/neutron-clang/bin:$PATH
           make O=out $DEVICE_DEFCONFIG CC=clang LLVM=1 LLVM_IAS=1
 
       - name: Build Kernel
         run: |
-          export PATH=$GITHUB_WORKSPACE/toolchains/Neutron-clang/bin:$PATH
+          export PATH=$HOME/toolchains/neutron-clang/bin:$PATH
           make O=out CC=clang LLVM=1 LLVM_IAS=1 -j$(nproc)
+          echo "Kernel build complete."
 
       - name: Package with AnyKernel3
         run: |
@@ -49,6 +50,7 @@ jobs:
           cp out/arch/arm64/boot/Image* AnyKernel3/
           cd AnyKernel3
           zip -r9 ../S21FE-Kernel-Neutron.zip *
+          echo "Kernel packaged successfully."
 
       - name: Upload Kernel Artifact
         uses: actions/upload-artifact@v4
