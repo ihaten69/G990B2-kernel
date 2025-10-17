@@ -1,4 +1,4 @@
-name: Build S21FE Kernel (Custom Container with Neutron Clang)
+name: Build S21FE Kernel (Custom Container with Repo Fix)
 
 on:
   workflow_dispatch:
@@ -17,12 +17,14 @@ jobs:
       - name: Checkout Kernel Source
         uses: actions/checkout@v4
 
-      - name: Build Custom Docker Image with GLIBC 2.38+
+      - name: Build Custom Docker Image with Repo Fix
         run: |
           cat > Dockerfile <<EOF
           FROM ubuntu:23.04
 
-          RUN apt-get update && \
+          RUN sed -i 's|http://archive.ubuntu.com/ubuntu|http://old-releases.ubuntu.com/ubuntu|g' /etc/apt/sources.list && \
+              sed -i 's|http://security.ubuntu.com/ubuntu|http://old-releases.ubuntu.com/ubuntu|g' /etc/apt/sources.list && \
+              apt-get update && \
               apt-get install -y bc bison build-essential curl flex git libncurses5-dev python3 unzip zip wget zstd
 
           ENV PATH="/root/toolchains/neutron-clang/bin:\$PATH"
