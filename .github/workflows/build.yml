@@ -10,7 +10,7 @@ jobs:
     env:
       ARCH: arm64
       SUBARCH: arm64
-      DEVICE_DEFCONFIG: your_defconfig_name_here  # Replace this with your actual defconfig
+      DEVICE_DEFCONFIG: r9q_eur_openx2_defconfig
 
     steps:
       - name: Checkout Kernel Source
@@ -30,8 +30,8 @@ jobs:
           ./antman -S
           echo "Neutron Clang synced successfully."
 
-      - name: Setup Build Output
-        run: mkdir -p out
+      - name: Verify Available Defconfigs
+        run: ls arch/arm64/configs/
 
       - name: Configure Kernel
         run: |
