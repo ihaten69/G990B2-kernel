@@ -1,4 +1,4 @@
-name: Build S21FE Kernel (Neutron Clang with Docker)
+name: Build S21FE Kernel (Custom Container with Neutron Clang)
 
 on:
   workflow_dispatch:
@@ -6,61 +6,52 @@ on:
 jobs:
   build:
     runs-on: ubuntu-latest
-    container:
-      image: ubuntu:23.04
-      options: --privileged
 
     env:
       ARCH: arm64
       SUBARCH: arm64
       DEVICE_DEFCONFIG: r9q_eur_openx2_defconfig
+      TOOLCHAIN_DIR: ${{ github.workspace }}/toolchains/neutron-clang
 
     steps:
-      - name: Fix Ubuntu repos for lunar (23.04) end-of-life
-        run: |
-          sed -i 's|http://archive.ubuntu.com/ubuntu|http://old-releases.ubuntu.com/ubuntu|g' /etc/apt/sources.list
-          sed -i 's|http://security.ubuntu.com/ubuntu|http://old-releases.ubuntu.com/ubuntu|g' /etc/apt/sources.list
-
-      - name: Install Dependencies
-        run: |
-          apt-get update
-          apt-get install -y git wget bc bison flex build-essential zip curl ccache libncurses5-dev python3 zstd
-
       - name: Checkout Kernel Source
         uses: actions/checkout@v4
 
-      - name: Prepare Toolchain Directory
-        run: mkdir -p $HOME/toolchains/neutron-clang
-
-      - name: Download and Sync Neutron Clang (AntMan)
+      - name: Build Custom Docker Image with GLIBC 2.38+
         run: |
-          cd $HOME/toolchains/neutron-clang
-          curl -LO https://raw.githubusercontent.com/Neutron-Toolchains/antman/main/antman
-          chmod +x antman
-          ./antman -S
-          echo "Neutron Clang synced successfully."
+          cat > Dockerfile <<EOF
+          FROM ubuntu:23.04
 
-      - name: Verify Defconfigs
-        run: ls arch/arm64/configs/
+          RUN apt-get update && \
+              apt-get install -y bc bison build-essential curl flex git libncurses5-dev python3 unzip zip wget zstd
 
-      - name: Configure Kernel
+          ENV PATH="/root/toolchains/neutron-clang/bin:\$PATH"
+          EOF
+
+          docker build -t custom-neutron-clang .
+
+      - name: Run Kernel Build in Custom Container
         run: |
-          export PATH=$HOME/toolchains/neutron-clang/bin:$PATH
-          make O=out $DEVICE_DEFCONFIG CC=clang LLVM=1 LLVM_IAS=1
-
-      - name: Build Kernel
-        run: |
-          export PATH=$HOME/toolchains/neutron-clang/bin:$PATH
-          make O=out CC=clang LLVM=1 LLVM_IAS=1 -j$(nproc)
-          echo "Kernel build complete."
-
-      - name: Package with AnyKernel3
-        run: |
-          git clone https://github.com/osm0sis/AnyKernel3.git
-          cp out/arch/arm64/boot/Image* AnyKernel3/
-          cd AnyKernel3
-          zip -r9 ../S21FE-Kernel-Neutron.zip *
-          echo "Kernel packaged successfully."
+          mkdir -p $TOOLCHAIN_DIR
+          docker run --rm -v ${{ github.workspace }}:/workspace -w /workspace custom-neutron-clang /bin/bash -c "
+            echo 'Downloading AntMan and syncing Neutron Clang...'
+            mkdir -p /root/toolchains/neutron-clang &&
+            cd /root/toolchains/neutron-clang &&
+            curl -LO https://raw.githubusercontent.com/Neutron-Toolchains/antman/main/antman &&
+            chmod +x antman &&
+            ./antman -S &&
+            export PATH=/root/toolchains/neutron-clang/bin:\$PATH &&
+            echo 'Configuring Kernel...' &&
+            make O=out $DEVICE_DEFCONFIG CC=clang LLVM=1 LLVM_IAS=1 &&
+            echo 'Building Kernel...' &&
+            make O=out CC=clang LLVM=1 LLVM_IAS=1 -j$(nproc) &&
+            echo 'Packaging Kernel...' &&
+            git clone https://github.com/osm0sis/AnyKernel3.git &&
+            cp out/arch/arm64/boot/Image* AnyKernel3/ &&
+            cd AnyKernel3 &&
+            zip -r9 ../S21FE-Kernel-Neutron.zip * &&
+            echo 'Kernel build complete.'
+          "
 
       - name: Upload Kernel Artifact
         uses: actions/upload-artifact@v4
