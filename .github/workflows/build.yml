@@ -1,0 +1,58 @@
+name: Build S21FE Kernel (Neutron Clang)
+
+on:
+  workflow_dispatch:
+
+jobs:
+  build:
+    name: Build Kernel
+    runs-on: ubuntu-22.04
+    env:
+      ARCH: arm64
+      SUBARCH: arm64
+      DEVICE_DEFCONFIG: your_defconfig_name_here  # replace this with actual defconfig
+
+    steps:
+      - name: Checkout Kernel Source
+        uses: actions/checkout@v4
+
+      - name: Setup Environment
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y git wget bc bison flex build-essential zip curl ccache libncurses5-dev python3
+          mkdir -p toolchains
+
+      - name: Download Neutron Clang
+        run: |
+          cd toolchains
+          wget https://github.com/Neutron-Toolchains/clang-build-catalogue/releases/latest/download/Neutron-clang.tar.zst
+          tar --zstd -xf Neutron-clang.tar.zst
+          echo "Neutron clang setup done"
+
+      - name: Prepare Build Directory
+        run: |
+          export PATH=$GITHUB_WORKSPACE/toolchains/Neutron-clang/bin:$PATH
+          mkdir -p out
+
+      - name: Configure Kernel
+        run: |
+          make O=out $DEVICE_DEFCONFIG CC=clang LLVM=1 LLVM_IAS=1
+
+      - name: Build Kernel
+        run: |
+          export PATH=$GITHUB_WORKSPACE/toolchains/Neutron-clang/bin:$PATH
+          make O=out CC=clang LLVM=1 LLVM_IAS=1 -j$(nproc)
+
+      - name: Package with AnyKernel3
+        run: |
+          git clone https://github.com/osm0sis/AnyKernel3.git
+          cp out/arch/arm64/boot/Image* AnyKernel3/
+          cd AnyKernel3
+          zip -r9 ../S21FE-Kernel-Neutron.zip *
+
+      - name: Upload Kernel Artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: S21FE-Kernel-Neutron
+          path: S21FE-Kernel-Neutron.zip
+
