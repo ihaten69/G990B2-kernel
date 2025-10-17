@@ -24,7 +24,7 @@ jobs:
       - name: Install Dependencies
         run: |
           apt-get update
-          apt-get install -y git wget bc bison flex build-essential zip curl ccache libncurses5-dev python3
+          apt-get install -y git wget bc bison flex build-essential zip curl ccache libncurses5-dev python3 zstd
 
       - name: Checkout Kernel Source
         uses: actions/checkout@v4
