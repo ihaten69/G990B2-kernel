@@ -1,4 +1,4 @@
-name: Build S21FE Kernel with Custom GLIBC Docker
+name: Build S21FE Kernel with Custom GLIBC Docker and Repo Fix
 
 on:
   workflow_dispatch:
@@ -17,13 +17,15 @@ jobs:
       - name: Checkout Kernel Source
         uses: actions/checkout@v4
 
-      - name: Create Dockerfile for Custom GLIBC 2.38
+      - name: Create Dockerfile for Custom GLIBC 2.38 and Repo Fix
         run: |
           cat > Dockerfile <<EOF
           FROM ubuntu:23.04
 
-          RUN apt-get update && apt-get install -y \
-            build-essential wget curl zstd git bc bison flex libncurses5-dev python3 unzip zip
+          RUN sed -i 's|http://archive.ubuntu.com/ubuntu|http://old-releases.ubuntu.com/ubuntu|g' /etc/apt/sources.list && \
+              sed -i 's|http://security.ubuntu.com/ubuntu|http://old-releases.ubuntu.com/ubuntu|g' /etc/apt/sources.list && \
+              apt-get update && apt-get install -y \
+                build-essential wget curl zstd git bc bison flex libncurses5-dev python3 unzip zip
 
           # Download and build GLIBC 2.38
           RUN wget http://ftp.gnu.org/gnu/libc/glibc-2.38.tar.gz && \
