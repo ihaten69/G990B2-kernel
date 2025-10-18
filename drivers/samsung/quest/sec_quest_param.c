@@ -329,7 +329,7 @@ void quest_load_param_api_gpio_test_result()
 		QUEST_PRINT("%s : succeeded\n", __func__);
 }
 
-void quest_sync_param_api_gpio_test_result()
+void quest_sync_param_api_gpio_test_result(void)
 {
 	if (!sec_set_param(param_index_api_gpio_test_result, param_api_gpio_test_result))
 		QUEST_PRINT("%s : failed\n", __func__);
