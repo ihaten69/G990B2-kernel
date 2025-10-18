@@ -1,0 +1,62 @@
+name: Build Android Kernel
+
+on:
+  push:
+    branches:
+      - main
+  workflow_dispatch:
+
+jobs:
+  build:
+    name: Compile Kernel
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout Kernel Source
+        uses: actions/checkout@v4
+
+      - name: Initialize Build Environment
+        run: |
+          sudo apt update
+          DEBIAN_FRONTEND=noninteractive sudo apt install -yq \
+            attr ccache clang golang libbrotli-dev \
+            libgtest-dev libprotobuf-dev libunwind-dev libusb-1.0-0-dev libzstd-dev \
+            linux-modules-extra-$(uname -r) build-essential lld ninja-build protobuf-compiler zipalign gcc-aarch64-linux-gnu libc6-dev libarchive-tools
+          git config --global user.name "github-actions[bot]"
+          git config --global user.email "41898282+github-actions[bot]@users.noreply.github.com"
+
+      - name: Fetch Neutron Clang and Patch glibc
+        run: |
+          export KERNEL_DIR="$(pwd)"
+          mkdir -p "$HOME/toolchains/neutron-clang"; cd "$HOME/toolchains/neutron-clang"
+          curl -LO "https://raw.githubusercontent.com/Neutron-Toolchains/antman/main/antman"; chmod +x antman
+          ./antman -S
+          ./antman --patch=glibc
+          cd "$KERNEL_DIR"
+
+      - name: Configure Kernel
+        run: |
+          export PATH="$HOME/toolchains/neutron-clang/bin:$PATH"
+          export ARCH=arm64
+          export SUBARCH=arm64
+          export CROSS_COMPILE=aarch64-linux-gnu-
+          export CLANG_TRIPLE=aarch64-linux-gnu-
+          make r9q_eur_openx2_defconfig
+
+      - name: Build Kernel
+        run: |
+          export PATH="$HOME/toolchains/neutron-clang/bin:$PATH"
+          export ARCH=arm64
+          export SUBARCH=arm64
+          export CROSS_COMPILE=aarch64-linux-gnu-
+          export CLANG_TRIPLE=aarch64-linux-gnu-
+          make -j$(nproc)
+
+      - name: Upload Kernel Image
+        uses: actions/upload-artifact@v4
+        with:
+          name: Kernel-Image
+          path: |
+            arch/arm64/boot/Image*
+            arch/arm64/boot/dts/**/*.dtb*
+
