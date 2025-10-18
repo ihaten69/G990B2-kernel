@@ -305,7 +305,7 @@ void quest_initialize_curr_step(void)
 }
 
 
-void quest_load_param_api_gpio_test()
+void quest_load_param_api_gpio_test(void)
 {
 	if (!sec_get_param(param_index_api_gpio_test, &param_api_gpio_test))
 		QUEST_PRINT("%s : failed\n", __func__);
