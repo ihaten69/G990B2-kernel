@@ -1,21 +1,26 @@
-name: Build Android Kernel
+name: Build
 
 on:
+  workflow_dispatch:
+  pull_request:
   push:
     branches:
-      - main
-  workflow_dispatch:
+      - 'main'
 
 jobs:
-  build:
-    name: Compile Kernel
+  build_aqua:
     runs-on: ubuntu-latest
 
+    strategy:
+      fail-fast: false
+      matrix:
+        target: [SM-G990B2]
+
     steps:
-      - name: Checkout Kernel Source
+      - name: Checkout repo
         uses: actions/checkout@v4
 
-      - name: Initialize Build Environment
+      - name: Set up build environment
         run: |
           sudo apt update
           DEBIAN_FRONTEND=noninteractive sudo apt install -yq \
@@ -29,37 +34,54 @@ jobs:
         run: |
           export KERNEL_DIR="$(pwd)"
           mkdir -p "$HOME/toolchains/neutron-clang"; cd "$HOME/toolchains/neutron-clang"
-          curl -LO "https://raw.githubusercontent.com/Neutron-Toolchains/antman/main/antman"; chmod +x antman
-          ./antman -S
-          ./antman --patch=glibc
+          curl -LO "https://raw.githubusercontent.com/Neutron-Toolchains/antman/main/antman"; chmod +x antman; ./antman -S; ./antman --patch=glibc
           cd "$KERNEL_DIR"
 
-      - name: Configure Kernel
+      - name: Fetch AnyKernel3
         run: |
-          export SRC_DIR="$(pwd)"
-          export TC_DIR="$HOME/toolchains/neutron-clang"
-          export JOBS="$(nproc --all)"
-          export PATH="$TC_DIR/bin:$PATH"
-          export ARCH=arm64
-          export SUBARCH=arm64
-          export CROSS_COMPILE=aarch64-linux-gnu-
-          export CLANG_TRIPLE=aarch64-linux-gnu-
-          make -C $SRC_DIR O=$SRC_DIR/out vendor/r9q_eur_openx2_defconfig
+          git clone https://github.com/glikched/AnyKernel3 -b r9q ./AnyKernel3
 
-      - name: Build Kernel (Ignore Werror)
+      - name: Build Kernel Clean
         run: |
-          export SRC_DIR="$(pwd)"
-          export TC_DIR="$HOME/toolchains/neutron-clang"
-          export JOBS="$(nproc --all)"
-          export MAKE_PARAMS="-j$JOBS -C $SRC_DIR O=$SRC_DIR/out ARCH=arm64 CC=clang CLANG_TRIPLE=$TC_DIR/bin/aarch64-linux-gnu- LLVM=1 CROSS_COMPILE=$TC_DIR/bin/llvm-"
-          export PATH="$TC_DIR/bin:$PATH"
-          $MAKE_PARAMS KCFLAGS=-Wno-error WERROR=0
+          source ./build_script.sh ${{ matrix.target }}
+          cp ./AnyKernel3/AQUA* ./
 
-      - name: Upload Kernel Image
-        uses: actions/upload-artifact@v4
+#      - name: Clean Kernel Source
+#        run: |
+#          make mrproper ARCH=arm64 LLVM=1
+# 
+#      - name: Build Kernel With KSU
+#       run: |
+#         source ./build_script.sh ${{ matrix.target }} --ksu
+#         cp ./AnyKernel3/AQUA* ./
+
+      - name: Format Date
+        id: format_date
+        run: echo "bucharest_time=$(TZ='Europe/Bucharest' date +'%Y-%m-%d %T %Z')" >> $GITHUB_ENV
+
+      - name: Publish to GitHub
+        id: release
+        uses: softprops/action-gh-release@v1
         with:
-          name: Kernel-Image
-          path: |
-            out/arch/arm64/boot/Image*
-            out/arch/arm64/boot/dts/**/*.dtb*
+          files: AQUA*
+          name: AQUA-CI_${{ github.run_number }}
+          tag_name: ${{ github.run_number }}
+          body: |
+            **Release Notes -** :droplet: **EquinoX Kernel** :droplet:
 
+            - **Kernel Version:** 5.4.274
+            - **Clang Version:** Neutron-clang
+            - **Release Date (Bucharest Time):** ${{ steps.format_date.outputs.bucharest_time }}
+            - **Run Number:** ${{ github.run_number }}
+
+            :rocket: *Built with love by GitHub Actions.*
+        env:
+          GITHUB_TOKEN: ${{ secrets.TEST }}
+
+      - uses: actions/upload-artifact@v4
+        with:
+          name: AQUA-CI_${{ github.run_number }}-${{ matrix.target }}-artifacts
+          path: |
+            ./AQUA*.zip
+          compression-level: 0
+ 
