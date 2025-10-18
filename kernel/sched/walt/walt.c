@@ -830,9 +830,9 @@ static inline void inter_cluster_migration_fixup
 
 	if (src_rq->wrq.curr_runnable_sum < p->wts.curr_window_cpu[task_cpu]) {
 		printk_deferred("WALT-BUG pid=%u CPU%d -> CPU%d src_crs=%llu is lesser than task_contrib=%llu",
-				p->pid, src_rq->cpu, dest_rq->cpu,
-				src_rq->wrq.curr_runnable_sum,
-				p->wts.curr_window_cpu[task_cpu]);
+                                p->pid, src_rq->cpu, dest_rq->cpu,
+                                (unsigned long long)src_rq->wrq.curr_runnable_sum,
+                                (unsigned long long)p->wts.curr_window_cpu[task_cpu]);
 		walt_task_dump(p);
 		SCHED_BUG_ON(1);
 	}
@@ -840,9 +840,9 @@ static inline void inter_cluster_migration_fixup
 
 	if (src_rq->wrq.prev_runnable_sum < p->wts.prev_window_cpu[task_cpu]) {
 		printk_deferred("WALT-BUG pid=%u CPU%d -> CPU%d src_prs=%llu is lesser than task_contrib=%llu",
-				p->pid, src_rq->cpu, dest_rq->cpu,
-				src_rq->wrq.prev_runnable_sum,
-				p->wts.prev_window_cpu[task_cpu]);
+                                p->pid, src_rq->cpu, dest_rq->cpu,
+                                (unsigned long long)src_rq->wrq.prev_runnable_sum,
+                                (unsigned long long)p->wts.prev_window_cpu[task_cpu]);
 		walt_task_dump(p);
 		SCHED_BUG_ON(1);
 	}
