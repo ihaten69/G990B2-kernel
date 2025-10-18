@@ -291,7 +291,7 @@ void quest_clear_param_quest_data()
 	quest_sync_param_quest_ddr_result_data();
 }
 
-void quest_initialize_curr_step()
+void quest_initialize_curr_step(void)
 {
 	param_quest_data.curr_step = STEP_NONE;
 	param_quest_data.hlos_remained_count = 0;
