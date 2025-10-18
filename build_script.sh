@@ -94,7 +94,6 @@ ak3() {
 copyoutputtozip() {
     find "$(pwd)/out/modules" -type f -iname "*.ko" -exec cp -r {} ./AnyKernel3/modules/vendor/lib/modules/ \;
     cp ./out/arch/arm64/boot/Image ./AnyKernel3/
-    cp ./out/arch/arm64/boot/dtbo.img ./AnyKernel3/
     cd AnyKernel3
     rm -rf AQUA*
     zip -r9 $ZIP_NAME . -x '*.git*' '*patch*' '*ramdisk*' 'LICENSE' 'README.md'
