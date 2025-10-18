@@ -36,28 +36,30 @@ jobs:
 
       - name: Configure Kernel
         run: |
-          export PATH="$HOME/toolchains/neutron-clang/bin:$PATH"
+          export SRC_DIR="$(pwd)"
+          export TC_DIR="$HOME/toolchains/neutron-clang"
+          export JOBS="$(nproc --all)"
+          export PATH="$TC_DIR/bin:$PATH"
           export ARCH=arm64
           export SUBARCH=arm64
           export CROSS_COMPILE=aarch64-linux-gnu-
           export CLANG_TRIPLE=aarch64-linux-gnu-
-          make r9q_eur_openx2_defconfig
+          make -C $SRC_DIR O=$SRC_DIR/out vendor/r9q_eur_openx2_defconfig
 
       - name: Build Kernel (Ignore Werror)
         run: |
-          export PATH="$HOME/toolchains/neutron-clang/bin:$PATH"
-          export ARCH=arm64
-          export SUBARCH=arm64
-          export CROSS_COMPILE=aarch64-linux-gnu-
-          export CLANG_TRIPLE=aarch64-linux-gnu-
-          # Temporary fix for forbidden warnings
-          make -j$(nproc) KCFLAGS=-Wno-error WERROR=0
+          export SRC_DIR="$(pwd)"
+          export TC_DIR="$HOME/toolchains/neutron-clang"
+          export JOBS="$(nproc --all)"
+          export MAKE_PARAMS="-j$JOBS -C $SRC_DIR O=$SRC_DIR/out ARCH=arm64 CC=clang CLANG_TRIPLE=$TC_DIR/bin/aarch64-linux-gnu- LLVM=1 CROSS_COMPILE=$TC_DIR/bin/llvm-"
+          export PATH="$TC_DIR/bin:$PATH"
+          $MAKE_PARAMS KCFLAGS=-Wno-error WERROR=0
 
       - name: Upload Kernel Image
         uses: actions/upload-artifact@v4
         with:
           name: Kernel-Image
           path: |
-            arch/arm64/boot/Image*
-            arch/arm64/boot/dts/**/*.dtb*
+            out/arch/arm64/boot/Image*
+            out/arch/arm64/boot/dts/**/*.dtb*
 
