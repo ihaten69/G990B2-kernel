@@ -211,12 +211,12 @@ __read_mostly unsigned int walt_scale_demand_divisor;
 
 static inline void walt_task_dump(struct task_struct *p)
 {
-	char buff[NR_CPUS * 16];
-	int i, j = 0;
-	int buffsz = NR_CPUS * 16;
+	 char buff[NR_CPUS * 16];
+         int i, j = 0;
+         int buffsz = NR_CPUS * 16;
 
-	SCHED_PRINT(p->pid);
-	SCHED_PRINT(p->wts.mark_start);
+        SCHED_PRINT((unsigned long long)p->pid);
+        SCHED_PRINT(p->wts.mark_start);
 	SCHED_PRINT(p->wts.demand);
 	SCHED_PRINT(p->wts.coloc_demand);
 	SCHED_PRINT(sched_ravg_window);
