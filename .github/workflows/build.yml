@@ -73,7 +73,7 @@ jobs:
 
       - uses: actions/upload-artifact@v4
         with:
-          name: AQUA-CI_${{ github.run_number }}-${{ matrix.target }}-artifacts
+          name: Kernel_${{ github.run_number }}-${{ matrix.target }}-artifacts
           path: |
            ./out/arch/arm64/boot/Image
           compression-level: 0
