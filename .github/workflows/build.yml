@@ -52,29 +52,29 @@ jobs:
         id: format_date
         run: echo "bucharest_time=$(TZ='Europe/Bucharest' date +'%Y-%m-%d %T %Z')" >> $GITHUB_ENV
 
-      - name: Publish to GitHub
-        id: release
-        uses: softprops/action-gh-release@v1
+#      - name: Publish to GitHub
+#        id: release
+#        uses: softprops/action-gh-release@v1
+#        with:
+#         files: out/arch/arm64/boot/Image
+#          name: Kernel_${{ github.run_number }}
+#          tag_name: ${{ github.run_number }}
+#          body: |
+#            **Release Notes -** :droplet: **EquinoX Kernel** :droplet:
+#
+#            - **Kernel Version:** 5.4.274
+#            - **Clang Version:** Neutron-clang
+#            - **Release Date (Bucharest Time):** ${{ steps.format_date.outputs.bucharest_time }}
+#            - **Run Number:** ${{ github.run_number }}
+#
+#            :rocket: *Built with love by GitHub Actions.*
+#        env:
+#          GITHUB_TOKEN: ${{ secrets.TEST }}
+
+      - uses: actions/upload-artifact@v4
         with:
-          files: out/arch/arm64/boot/Image
-          name: Kernel_${{ github.run_number }}
-          tag_name: ${{ github.run_number }}
-          body: |
-            **Release Notes -** :droplet: **EquinoX Kernel** :droplet:
-
-            - **Kernel Version:** 5.4.274
-            - **Clang Version:** Neutron-clang
-            - **Release Date (Bucharest Time):** ${{ steps.format_date.outputs.bucharest_time }}
-            - **Run Number:** ${{ github.run_number }}
-
-            :rocket: *Built with love by GitHub Actions.*
-        env:
-          GITHUB_TOKEN: ${{ secrets.TEST }}
-
-#      - uses: actions/upload-artifact@v4
-#       with:
-#          name: AQUA-CI_${{ github.run_number }}-${{ matrix.target }}-artifacts
-#          path: |
-#            ./AQUA*.zip
-#          compression-level: 0
+          name: AQUA-CI_${{ github.run_number }}-${{ matrix.target }}-artifacts
+          path: |
+           ./out/arch/arm64/boot/Image
+          compression-level: 0
  
