@@ -45,6 +45,7 @@ jobs:
         run: |
           source ./build_script.sh ${{ matrix.target }}
           cp ./out/arch/arm64/boot/Image ./
+          ls -R out
 
 
       - name: Format Date
